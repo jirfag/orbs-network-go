@@ -20,6 +20,7 @@ import (
 	"github.com/orbs-network/orbs-spec/types/go/protocol"
 	"github.com/orbs-network/orbs-spec/types/go/protocol/client"
 	"github.com/orbs-network/orbs-spec/types/go/services"
+	"os"
 	"time"
 )
 
@@ -51,6 +52,17 @@ type inProcessNetwork struct {
 }
 
 func (n *inProcessNetwork) StartNodes(ctx context.Context) InProcessNetwork {
+	logFilePath := "./orbs-network.log"
+
+	logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+
+	fileOutput := log.NewOutput(logFile).WithFormatter(log.NewJsonFormatter())
+
+	stdoutOutput := log.NewOutput(os.Stdout).WithFormatter(log.NewHumanReadableFormatter())
+
 	for _, node := range n.nodes {
 		node.nodeLogic = bootstrap.NewNodeLogic(
 			ctx,
@@ -58,7 +70,7 @@ func (n *inProcessNetwork) StartNodes(ctx context.Context) InProcessNetwork {
 			node.blockPersistence,
 			node.statePersistence,
 			node.nativeCompiler,
-			n.testLogger.WithTags(log.Node(node.name)),
+			n.testLogger.WithTags(log.Node(node.name)).WithOutput(stdoutOutput, fileOutput),
 			node.metricRegistry,
 			node.config,
 		)

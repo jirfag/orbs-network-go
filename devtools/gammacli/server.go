@@ -23,7 +23,18 @@ func StartGammaServer(serverAddress string, blocking bool) *GammaServer {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	network := harness.NewDevelopmentNetwork().StartNodes(ctx)
-	testLogger := log.GetLogger().WithOutput(log.NewOutput(os.Stdout).WithFormatter(log.NewHumanReadableFormatter()))
+
+	logFilePath := "./orbs-network.log"
+
+	logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+
+	fileOutput := log.NewOutput(logFile).WithFormatter(log.NewJsonFormatter())
+
+	testLogger := log.GetLogger().WithOutput(log.NewOutput(os.Stdout).WithFormatter(log.NewHumanReadableFormatter()), fileOutput)
+
 	metricRegistry := metric.NewRegistry()
 
 	httpServer := httpserver.NewHttpServer(serverAddress, testLogger, network.PublicApi(0), metricRegistry)
