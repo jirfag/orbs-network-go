@@ -58,7 +58,7 @@ func init() {
 		" the same arbitrary value in each test invocation")
 }
 
-func WithRand(t namedLogger, f func(r *rand.Rand)) {
+func NewRand(t namedLogger) *rand.Rand {
 	var newSeed int64
 	if randPreference.mode == randPrefInvokeClock {
 		newSeed = time.Now().UTC().UnixNano()
@@ -66,5 +66,5 @@ func WithRand(t namedLogger, f func(r *rand.Rand)) {
 		newSeed = randPreference.seed
 	}
 	t.Log(fmt.Sprintf("random seed %v (%s)", newSeed, t.Name()))
-	f(rand.New(rand.NewSource(newSeed)))
+	return rand.New(rand.NewSource(newSeed))
 }

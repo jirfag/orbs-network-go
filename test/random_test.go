@@ -24,14 +24,11 @@ func TestWithRandLogsCorrectSeedAndTestName(t *testing.T) {
 		require.Equal(t, "(MockName1)", tokens[3], "expected fourth word in log message to be the name of the test")
 	}).Times(1)
 
-	var rand1 uint64
-	WithRand(&nlMock, func(r *rand.Rand) {
-		rand1 = r.Uint64()
-	})
+	rand1 := NewRand(&nlMock).Uint64()
 
 	expectedRand1 := rand.New(rand.NewSource(loggedSeed)).Uint64()
 
-	require.Equal(t, expectedRand1, rand1, "expected WithRand() to log the correct random seed")
+	require.Equal(t, expectedRand1, rand1, "expected NewRand() to log the correct random seed")
 }
 
 
@@ -42,13 +39,8 @@ func TestWithExplicitRand(t *testing.T) {
 	nlMock := namedLoggerMock{name: "MockName"}
 	nlMock.When("Log", "random seed 1 (MockName)").Times(2)
 
-	var rand1, rand2 uint64
-	WithRand(&nlMock, func(r *rand.Rand){
-		rand1 = r.Uint64()
-	})
-	WithRand(&nlMock, func(r *rand.Rand){
-		rand2 = r.Uint64()
-	})
+	rand1 := NewRand(&nlMock).Uint64()
+	rand2 := NewRand(&nlMock).Uint64()
 
 	expectedRand := rand.New(rand.NewSource(1)).Uint64()
 
@@ -56,7 +48,7 @@ func TestWithExplicitRand(t *testing.T) {
 	require.Equal(t, expectedRand, rand2, "expected explicit random seed to produce identical random values")
 
 	_, err := nlMock.Verify()
-	require.NoError(t, err, "expected WithRand to log the explicit random value on each separate invocation")
+	require.NoError(t, err, "expected NewRand to log the explicit random value on each separate invocation")
 }
 
 func TestWithLaunchClock(t *testing.T) {
@@ -66,23 +58,18 @@ func TestWithLaunchClock(t *testing.T) {
 
 	nlMock := namedLoggerMock{name: "MockName"}
 	nlMock.When("Log", mock.Any).Call(func(message string){
-		require.EqualValues(t, fmt.Sprintf("random seed %v (MockName)", randPreference.seed), message, "expected WithRand to log the launch clock")
+		require.EqualValues(t, fmt.Sprintf("random seed %v (MockName)", randPreference.seed), message, "expected NewRand to log the launch clock")
 	}).Times(2)
 
 
-	var rand1, rand2 uint64
-	WithRand(&nlMock, func(r *rand.Rand){
-		rand1 = r.Uint64()
-	})
-	WithRand(&nlMock, func(r *rand.Rand){
-		rand2 = r.Uint64()
-	})
+	rand1 := NewRand(&nlMock).Uint64()
+	rand2 := NewRand(&nlMock).Uint64()
 
 	expectedRand := rand.New(rand.NewSource(launchClock)).Uint64()
 
 	require.Equal(t, expectedRand, rand1, "expected launch-clock random seed to produce identical values on each invocation")
 	require.Equal(t, expectedRand, rand2, "expected launch-clock random seed to produce identical values on each invocation")
-	require.Equal(t, launchClock, randPreference.seed, "expected seed to not change when calling WithRand in LaunchClock mode")
+	require.Equal(t, launchClock, randPreference.seed, "expected seed to not change when calling NewRand in LaunchClock mode")
 
 	_, err := nlMock.Verify()
 	require.NoError(t, err)
@@ -98,18 +85,13 @@ func TestWithInvocationClock(t *testing.T) {
 		loggedSeeds = append(loggedSeeds, seed)
 	}).Times(2)
 
-	var rand1, rand2 uint64
-	WithRand(&nlMock, func(r *rand.Rand){
-		rand1 = r.Uint64()
-	})
-	WithRand(&nlMock, func(r *rand.Rand){
-		rand2 = r.Uint64()
-	})
+	rand1 := NewRand(&nlMock).Uint64()
+	rand2 := NewRand(&nlMock).Uint64()
 
 	require.Equal(t, rand.New(rand.NewSource(loggedSeeds[0])).Uint64(), rand1)
 	require.Equal(t, rand.New(rand.NewSource(loggedSeeds[1])).Uint64(), rand2)
 
-	require.NotEqual(t, loggedSeeds[0], loggedSeeds[1], "expected seed values to be different on two WithRand invocations")
+	require.NotEqual(t, loggedSeeds[0], loggedSeeds[1], "expected seed values to be different on two NewRand invocations")
 
 	require.True(t,time.Now().UTC().UnixNano() - loggedSeeds[0] < int64(1*time.Millisecond))
 
